@@ -1,0 +1,7 @@
+-I
+/opt/local/include
+-I
+..
+-L
+/opt/local/lib
+-std=c11
