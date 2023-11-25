@@ -13,7 +13,7 @@ endef
 
 all: ./main
 
-../%.o:
+../%.o: %.c %.h
 	@$(call submake,$<)
 
 ./%.o: %.c %.h

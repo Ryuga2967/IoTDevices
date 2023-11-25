@@ -2,6 +2,7 @@
 #define __JRH_LOOP_H
 #include "jrh_event.h"
 #include "jrh_queue.h"
+#include "jrh_lock.h"
 
 typedef struct jrh_loop jrh_loop_t;
 struct jrh_loop {
