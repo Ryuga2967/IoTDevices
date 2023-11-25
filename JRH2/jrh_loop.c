@@ -56,27 +56,29 @@ int jrh_loop_run(jrh_loop_t* loop) {
   for (;;) {
     int neq = kevent(loop->kq, loop->changes, loop->n_changes, loop->events, loop->n_events, 0);
     loop->n_changes = 0;
-    if (neq > 0) {
-      for (int i = 0;i < neq;++i) {
-        jrh_event_t* event = NULL;
-        if (loop->events[i].ident)
-          event = loop->events[i].udata;
-        else
-          event = &loop->loop_event;
-        event->io.kev = loop->events[i];
-        if (event->check(event))
-          continue;
-        if (event->dispatch(event))
-          continue;
-        if (event->work)
-          jrh_queue_push(&loop->queue, &event, sizeof(void*), event->prior);
+    if (neq <= 0)
+      continue;
+      
+    for (int i = 0;i < neq;++i) {
+      jrh_event_t* event = NULL;
+      event = loop->events[i].udata;
+      if (event->type == JRH_EVENT_LOOP)
+        event = &loop->loop_event;
+      event->io.kev = loop->events[i];
+      if (event->check(event))
+        continue;
+      if (event->dispatch(event))
+        continue;
+      if (event->work) {
+        jrh_queue_push(&loop->queue, &event, sizeof(void*), event->prior);
       }
     }
     
-    for (;loop->queue;jrh_queue_pop(&loop->queue)) {
+    while (loop->queue) {
       jrh_queue_t* delete = loop->queue;
       jrh_event_t* event = *(jrh_event_t** )loop->queue->data;
       event->work(event);
+      jrh_queue_pop(&loop->queue);
       free(delete);
     }
   }
@@ -162,14 +164,12 @@ int jrh_loop_delay_after(jrh_loop_t* loop, jrh_event_t* event, int time) {
 
 int jrh_loop_register(jrh_loop_t* loop, jrh_event_t* event) {
   event->io.kev.fflags |= EV_ADD;
-  int idx = loop->n_changes++;
-  loop->changes[idx] = event->io.kev;
+  loop->changes[loop->n_changes++] = event->io.kev;
   return 0;
 }
 
 int jrh_loop_unregister(jrh_loop_t* loop, jrh_event_t* event) {
   event->io.kev.fflags = EV_DELETE;
-  int idx = loop->n_changes++;
-  loop->changes[idx] = event->io.kev;
+  loop->changes[loop->n_changes++] = event->io.kev;
   return 0;
 }

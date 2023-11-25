@@ -13,7 +13,7 @@ static int jrh_event_fd_read(jrh_event_t* event) {
     void* new = realloc(event->io.data, new_size);
     if (!new)
       return 1;
-    n = read(event->io.kev.ident, new + data_len, new_size - data_len);
+    n += read(event->io.kev.ident, new + data_len, new_size - data_len);
     event->io.data = new;
     data_len  = new_size;
   }
